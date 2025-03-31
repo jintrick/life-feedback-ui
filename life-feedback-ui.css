@@ -41,125 +41,147 @@
 */
 
 @-moz-document url-prefix("https://life-web.mhlw.go.jp/feedback-check") {
-     /* root */
-    html,body{
+
+    /* root */
+    html,
+    body {
         /* 最後までスクロールできない問題を解決 */
         height: auto !important;
         max-height: none !important;
         overflow: visible !important;
     }
+
     /* header */
-    .header-page{
+    .header-page {
         /* 最上部のナビゲーションをスクロールに追随させない */
-        position: static !important; /* "fixed" fixed! */
+        position: static !important;
+        /* "fixed" fixed! */
     }
-    
+
     /* rapper layouted */
-    .app-component[_ngcontent-ng-c2883769184]{
+    .app-component[_ngcontent-ng-c2883769184] {
         display: block !important;
     }
-    .main-component{
+
+    .main-component {
         grid-area: none !important;
         margin-top: 0px !important;
     }
-    
-    
+
+
     /* コンテナボックス */
-    .content-area{
+    .content-area {
         display: grid;
-        grid-template-columns: 250px 1fr; /* 左300px右可変に分割 */
+        grid-template-columns: 250px 1fr;
+        /* 左300px右可変に分割 */
     }
 
     /******************/
     /* 利用者IDテーブル */
     /******************/
-    .serviceUser-area{ /* ルートdiv */
+    .serviceUser-area {
+        /* ルートdiv */
         /* reset */
         position: static !important;
         width: auto !important;
         height: auto !important;
-        
+
         grid-column: 1;
     }
-    .serviceUser-table{
+
+    .serviceUser-table {
         overflow-x: auto !important;
         height: auto !important;
         width: auto !important;
     }
+
     /* table header */
-    .mat-mdc-header-row{
+    .mat-mdc-header-row {
         height: auto !important;
         font-size: medium !important;
     }
 
     /* tr */
-    thead .mat-column-serviceUserId,  
-    thead .mat-column-serviceUserName{
+    thead .mat-column-serviceUserId,
+    thead .mat-column-serviceUserName {
         font-size: small !important;
         width: auto !important;
         height: auto !important;
     }
-    .mdc-data-table__row{
+
+    .mdc-data-table__row {
         height: auto !important;
     }
+
     /* td, th */
-    .mat-mdc-cell{
+    .mat-mdc-cell {
         /* セル共通 */
         padding: .3em !important;
         line-height: 1.0 !important;
     }
-    tbody .mat-column-serviceUserId,  
-    tbody .mat-column-serviceUserName{
+
+    tbody .mat-column-serviceUserId,
+    tbody .mat-column-serviceUserName {
         font-size: medium !important;
         width: auto !important;
         height: auto !important;
         text-align: left !important;
         cursor: default;
     }
-    tbody > tr:hover{
+
+    tbody>tr:hover {
         background-color: #eee;
     }
-    .mat-mdc-header-cell{
+
+    .mat-mdc-header-cell {
         height: 20px !important;
     }
+
     /* 事業所番号と利用者は選択できません」を消す */
     app-feedback-check .careFacility-Id,
-    app-feedback-check .notice{
+    app-feedback-check .notice {
         display: none;
     }
 
     /*******************/
     /* フィードバック本体 */
     /*******************/
-    .feedback{ /* ルートdiv */
+    .feedback {
+        /* ルートdiv */
         /* reset */
         margin-top: 0px;
         width: auto !important;
         margin-left: 0px !important;
-        
+
         grid-column: 2;
     }
-    #dashboard-spacer{ /* iframe内部のレイアウト用div */
+
+    #dashboard-spacer {
+        /* iframe内部のレイアウト用div */
         /* reset */
         margin: 0 !important;
-    }   
-    
-    
+    }
+
+
+
     /*******************************/
     /* ユーザースクリプトで挿入する要素 */
     /*******************************/
-    input[name="username"]{
+    input[name="username"] {
         font-size: medium;
         padding: 4px 4px;
     }
-    fieldset{
+
+    fieldset {
         background-color: rgba(0, 72, 179, 0.15);
         margin: 2px;
     }
-    fieldset label{
+
+    fieldset label {
         font-size: medium;
     }
-    legend{
+
+    legend {
         font-size: small;
     }
 }

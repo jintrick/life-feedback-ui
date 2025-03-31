@@ -1,50 +1,51 @@
 class LifeUserTable {
-	constructor(){
+	constructor(lifeFeedback) {
 		const table = document.querySelector('table[role="table"]');
 		if (!table)
 			return null;
 		this._table = entityTable
 		this._filterStates = null;
+		this.life = lifeFeedback;
 	}
 
 	filter(columnName, regex) {
 		const self = this._table;
-	    if (!(regex instanceof RegExp))
-	      throw new TypeError('第2引数は正規表現オブジェクトである必要があります');
-	  
-	    const rows = self.rows;
-	    if (rows.length <= 1)
+		if (!(regex instanceof RegExp))
+			throw new TypeError('第2引数は正規表現オブジェクトである必要があります');
+
+		const rows = self.rows;
+		if (rows.length <= 1)
 			return this;
-	  
-	    const headerRow = rows[0];
-	    const headers = Array.from(headerRow.cells).map(cell => cell.textContent.trim());
-	    const columnIndex = headers.indexOf(columnName);
-	    
-	    if (columnIndex === -1)
-	      throw new Error(`列 "${columnName}" が見つかりません`);
-	  
-	    // 各行のフィルター状態を記録するための Map
-	    self._filterStates = self._filterStates || new Map();
-	  
-	    // 現在のフィルターを保存
-	    self._filterStates.set(columnName, regex);
-	  
-	    Array.from(rows).slice(1).forEach(row => {
-	      // 全ての適用フィルターを確認
-	      let visible = true;
-	      for (const [col, reg] of self._filterStates.entries()) {
-	        const cellValue = row.cells[headers.indexOf(col)]?.textContent.trim() || "";
-	        if (!reg.test(cellValue)) {
-	          visible = false;
-	          break;
-	        }
-	      }
-	      row.style.display = visible ? 'table-row' : 'none';
-	    });
-	    return this;
+
+		const headerRow = rows[0];
+		const headers = Array.from(headerRow.cells).map(cell => cell.textContent.trim());
+		const columnIndex = headers.indexOf(columnName);
+
+		if (columnIndex === -1)
+			throw new LifeError(`列 "${columnName}" が見つかりません`);
+
+		// 各行のフィルター状態を記録するための Map
+		self._filterStates = self._filterStates || new Map();
+
+		// 現在のフィルターを保存
+		self._filterStates.set(columnName, regex);
+
+		Array.from(rows).slice(1).forEach(row => {
+			// 全ての適用フィルターを確認
+			let visible = true;
+			for (const [col, reg] of self._filterStates.entries()) {
+				const cellValue = row.cells[headers.indexOf(col)]?.textContent.trim() || "";
+				if (!reg.test(cellValue)) {
+					visible = false;
+					break;
+				}
+			}
+			row.style.display = visible ? 'table-row' : 'none';
+		});
+		return this;
 	}
 
-	replaceCaption(){
+	replaceCaption() {
 		const HTML_SNIPPET = `
 		<fieldset>
 		<legend>絞り込み</legend>
@@ -81,10 +82,10 @@ class LifeUserTable {
 		caption.insertAdjacentHTML('afterbegin', HTML_SNIPPET);
 		this._table.caption = caption;
 
-	    //各ラジオボタンをフィードバックと同期させ、イベントリスナをセット
+		//各ラジオボタンをフィードバックと同期させ、イベントリスナをセット
 		caption.querySelectorAll('input[name="filter"]').forEach(async (radio) => {
-	        //イベントリスナをセット
-	        radio.addEventListener('change', (e) => {
+			//イベントリスナをセット
+			radio.addEventListener('change', (e) => {
 				if (!radio.checked)
 					return;
 				const serviceCode = radio.value
@@ -93,12 +94,12 @@ class LifeUserTable {
 				//「全サービス」が選択されたときは何もせず抜ける
 				if (!serviceCode) return;
 				//サービス種類のセレクトボックスを選択しておく
-				life.initialize().selectService(serviceCode).catch(err => {
+				life.selectService(serviceCode).catch(err => {
 					alert(`現在のフィードバックページでは、${life.services[serviceCode]} を選択できませんでした： ${life.title}`)
 				});
 			});
 
-	        //サービス選択メニューと同期（存在しないサービスは選択できないようにしておく）
+			//サービス選択メニューと同期（存在しないサービスは選択できないようにしておく）
 			const comboBoxes = life.comboBoxes;
 			if (comboBoxes) {
 				try {

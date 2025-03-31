@@ -185,7 +185,7 @@
                //「全サービス」が選択されたときは何もせず抜ける
                if (!serviceCode) return;
                //サービス種類のセレクトボックスを選択しておく
-               life.initialize().selectService(serviceCode).catch(err => {
+               life.selectService(serviceCode).catch(err => {
                   alert(`現在のフィードバックページでは、${life.services[serviceCode]} を選択できませんでした： ${life.title}`)
                });
             }
@@ -216,7 +216,7 @@
 
       const table = document.querySelector('table');
       //既にイベントが定義されていたら抜ける（classで判定）
-      const className = "enhanced-by-mcc-sys"
+      const className = 'enhanced-by-mcc-sys'
       if (table.classList.contains(className))
          return;
 
@@ -275,7 +275,13 @@
    }
 
    function main() {
-      const userTable = document.querySelector('table');
+      const userTable = new LifeUserTable();
+      if (!userTable) {
+         alert('ユーザーテーブルが見つかりません。')
+         return;
+      }
+      userTable.replaceCaption();
+      
       const feedbackRoot = document.querySelector('tableau-viz').shadowRoot;
       //フィードバック操作オブジェクトを初期化
       insertAdjacentCSS(document, CSS_SNIPPET);
