@@ -23,11 +23,11 @@ const SERVICE_N_LABEL = Object.freeze({
 });
 
 /**
- * tableau-viz > shadow-root 以下を操作するビジネスロジックを担当するモデル
+ * tableau-viz 以下を操作するビジネスロジックを担当するモデル
  */
 class LifeFeedBackPage extends EventTarget {
 	/**
-	 * https://life-web.mhlw.go.jp ドメインでのみ初期化可能
+	 * https://life-web.mhlw.go.jp/* でのみ初期化可能
 	 */
 	constructor() {
 		super();
@@ -107,40 +107,40 @@ class LifeFeedBackPage extends EventTarget {
 	}
 
 	/**
-	 * @returns {string|undefined} - フィードバックページのタイトル, ロード未完了時やフィードバックページ以外はundefined
+	 * フィードバックページのタイトル
+	 * ロード未完了時やフィードバックページ以外はundefined
+	 * @returns {string|undefined}
 	 */
 	get title() {
 		const el = this.doc.querySelector('.tabZone-title');
 		return el?.innerText.split('利用者')[0].trim(); // 'フィードバック名\s?利用者フィードバック'
 	}
 	/**
-	 * @return {string|undefined} - 事業所番号
+	 * 事業所番号
+	 * @return {string|undefined}
 	 */
 	get careFacilityId() {
 		const tableau = this.ownerDocument.querySelector('tableau-viz');
 		return tableau?.querySelector('viz-parameter[name="自事業所番号"]')?.getAttribute('value');
 	}
 	/**
-	 * @returns {string|undefined} - 現在選択されているサービス種類のコード, 未選択時undefined
+	 * 現在選択されているサービス種類のコード
+	 * 未選択時: null
+	 * @returns {string|null}
 	 */
 	get currentService() {
 		const span = this.comboBoxes.services.currentItem;
-
-		if (!span) debugger;
-
 		const foundKey = Object.keys(SERVICE_N_LABEL)
 			.find(key => span.innerText.startsWith(SERVICE_N_LABEL[key]))
 		return foundKey ? foundKey : null;
 	}
-
 	/**
-	 * @retruns {LifeUserId|null} - 現在選択されているユーザーID, 未選択時null
+	 * 現在選択されているユーザーID
+	 * 未選択時: null
+	 * @retruns {LifeUserId|null}
 	 */
 	get currentUserId() {
 		const span = this.comboBoxes.users.currentItem;
-
-		if (!span) debugger;
-
 		const text = span.innerText;
 		try {
 			return new LifeUserId(text);
@@ -149,11 +149,20 @@ class LifeFeedBackPage extends EventTarget {
 		}
 	}
 	/**
-	 * 指定したフィードバックが利用可能なサービス一覧を取得する { service_code: servive_label }
-	 * @param {string|null} feedBackName - フィードバック名（"科学的介護推進体制加算"、etc.）
+	 * 選択肢として選択可能なサービス
+	 * {サービスコード: サービス名, ..}
+	 * @returns {Object}
+	 */
+	get availableServices() {
+		return this.services(this.title);
+	}
+	/**
+	 * 指定したフィードバックが利用可能なサービス一覧を取得する
+	 * {サービスコード: サービス名, ..}
+	 * @param {string} feedBackName - フィードバック名（"科学的介護推進体制加算"、etc.）
 	 * @return {object} - {service_code: service_label, ..}
 	 */
-	services(feedBackName) {
+	services(feedBackName = '') {
 		if (!feedBackName) return SERVICE_N_LABEL;
 
 		const code_list = FEEDBACK_N_SERVICE[feedBackName];
@@ -196,7 +205,7 @@ class LifeFeedBackPage extends EventTarget {
 
 	/**
 	 * 利用者（表示上はID）の選択をエミュレートする
-	 * @param {LifeUserId} userId
+	 * @param {LifeUserId} userId - ユーザーID
 	 * @returns {Promise<boolean>} - 選択の成否
 	 */
 	async selectUser(userId) {
@@ -205,7 +214,8 @@ class LifeFeedBackPage extends EventTarget {
 
 		// IDに該当するサービスが選択されていなければ、選択しておく
 		const serviceCode = userId.serviceCode;
-		if (this.currentService !== serviceCode) await this.selectService(serviceCode);
+		if (this.currentService !== serviceCode)
+			await this.selectService(serviceCode);
 
 		let a; // クリックしたいターゲット要素
 
@@ -440,12 +450,14 @@ class LifeUserId {
 	}
 	/**
 	 * IDのうち、サービス種類コードを除いた部分
+	 * @returns {string}
 	 */
 	get userCode() {
 		return this._idString.slice(0, 6);
 	}
 	/**
 	 * サービス種類コードを抜き出す
+	 * @returns {string}
 	 */
 	get serviceCode() {
 		return this._idString.slice(-2);
@@ -460,8 +472,11 @@ class LifeError extends Error {
 }
 
 
+export { LifeFeedBackPage, LifeUserId, LifeError };
 
-
-
+/* @if ENV=development */
 window.LifeFeedBackPage = LifeFeedBackPage;
 window.LifeUserId = LifeUserId;
+window.LifeError = LifeError;
+/* @endif */
+

@@ -1,3 +1,10 @@
+import { LifeFeedBackPage, LifeUserId, LifeError } from './LifeFeedBackPage.js';
+import toast from './ToastDiv.js';
+
+/**
+ * FHD未満の環境では右側に隠れてしまっている利用者テーブルを左側に寄せて
+ * 利用者選択用のGUIとして利用するためのラッパー（シングルトン）
+ */
 class LifeUserTable {
 	/**
 	 * 
@@ -5,15 +12,15 @@ class LifeUserTable {
 	 */
 	constructor(lifeFeedback) {
 		const table = document.querySelector('table[role="table"]');
-		if (!table)
-			return null;
+		if (!table) {
+			throw new LifeError('table[role="table"]が見つからないため、LifeUserTableを初期化できません。');
+		}
 		this._table = table;
 		this._filterStates = null;
 		this.life = lifeFeedback;
-		// lifeがiframeのsrcの変更を検知したときイベントを発行するので、そいつを捉えてViewを更新する
-		this.life.addEventListener('src-loaded', e => {
-			this.replaceCaption();
-		});
+
+		// LifeFeedBackPageがiframeのsrcの変更を検知したときイベントを発行するので、そいつを捉えてViewを更新する
+		this.life.addEventListener('src-loaded', e => this.replaceCaption());
 
 		// 各ユーザー行 > イベントリスナーを登録
 		// 各ユーザー行 > data-id, data-name, data-servicecode　属性を付与
@@ -26,13 +33,45 @@ class LifeUserTable {
 			tr.addEventListener('click', this._onUserRowSelect);
 			tr.setAttribute('data-id', id);
 			tr.setAttribute('data-name', name);
-			tr.setAttribute('data-servicecode', serviceCode);
 		});
+
+		Object.defineProperty(HTMLLabelElement.prototype, "disabled", {
+			/**
+			 * @return {boolean} - disabled
+			 */
+			get() {
+				return this.classList.contains('disabled');
+			},
+			/**
+			 * @param {boolean} value - disabled
+			 */
+			set(value) {
+				this.classList.toggle('disabled', value);
+				Array.from(this.children).forEach(controller => {
+					controller.disabled = value
+				});
+			}
+		});
+
+		/**
+		 * テーブル行を排他的に選択する
+		 * @param {boolean} select - true: 選択, false: 非選択（全解除）
+		 */
+		HTMLTableRowElement.prototype.selectExclusively = function (select) {
+			const tbody = this.parentNode; // 誤ってthead/tfootでデータが定義されていてもOK
+
+			// 万が一重複していたときのために、only-selectedクラスのtrを全部走査する
+			tbody.querySelectorAll('tr.only-selected').forEach(row =>
+				row.classList.remove('only-selected')
+			);
+			if (select)
+				this.classList.add('only-selected');
+		};
 
 	}
 	/**
 	 * 
-	 * @param {string} columnName - 列名
+	 * @param {string} columnName - フィルター対象の列名
 	 * @param {RegExp} regex - フィルターに使う正規表現
 	 * @returns 
 	 */
@@ -50,14 +89,14 @@ class LifeUserTable {
 		if (columnIndex === -1)
 			throw new LifeError(`列 "${columnName}" が見つかりません`);
 
-		// 各行のフィルター状態を記録するための Map
+		// 各列のフィルター状態を記録するための Map
 		self._filterStates = self._filterStates || new Map();
 
-		// 現在のフィルターを保存
+		// 現在の列フィルターを保存
 		self._filterStates.set(columnName, regex);
 
 		Array.from(rows).slice(1).forEach(row => {
-			// 全ての適用フィルターを確認
+			// すべての列フィルターを適用
 			let visible = true;
 			for (const [col, reg] of self._filterStates.entries()) {
 				const cellValue = row.cells[headers.indexOf(col)]?.textContent.trim() || "";
@@ -68,9 +107,11 @@ class LifeUserTable {
 			}
 			row.style.display = visible ? 'table-row' : 'none';
 		});
-		return this;
 	}
-
+	/**
+	 * 高機能Captionに置き換える
+	 * 便宜上CaptionにViewコントローラーGUIを配置する
+	 */
 	replaceCaption() {
 		const HTML_SNIPPET = `
 		<style>
@@ -169,7 +210,7 @@ class LifeUserTable {
 		</style>
 		<button class="goto-menu">フィードバックメニューに戻る</button>
 		<fieldset>
-		<legend>絞り込み</legend>
+		<legend>利用者テーブルを絞り込む</legend>
 		<label>
 		  <input type="radio" name="filter" value="52">
 		  <span>入所 <small>[ID末尾52]</small></span>
@@ -199,60 +240,72 @@ class LifeUserTable {
 		caption.insertAdjacentHTML('afterbegin', HTML_SNIPPET);
 		this._table.caption = caption;
 
-		//各ラジオボタンをフィードバックと同期させ、イベントリスナをセット
+		//各ラジオボタンをフィードバックと同期させ、イベントリスナーをセット
+		const available_codes = Object.keys(this.life.availableServices);
+
 		caption.querySelectorAll('input[name="filter"]').forEach(async (radio) => {
-
-			// 現在のフィードバックページで無効なradioをdisabled
-			const code_list = Object.keys(this.life.services(this.life.title));
+			// 現在のフィードバックページで無効なradioを「ラベルごと」disabled！
 			const serviceCode = radio.value;
-			const label = radio.closest('label');
-
-			if (code_list.includes(serviceCode)) {
-				radio.disabled = false;
-				label.classList.remove('disabled')
-			} else {
-				radio.disabled = true;
-				label.classList.add('disabled');
-				return;
-			}
-
-			//イベントリスナをセット
-			radio.addEventListener('change', async (e) => {
-				if (!radio.checked)
-					return;
-				//利用者表をサービス種類でフィルター
-				this._table.filter('利用者ID', new RegExp(serviceCode + '$'));
-				//「全サービス」が選択されたときは何もせず抜ける
-				if (!serviceCode) return;
-				//サービス種類のセレクトボックスを選択しておく
-				try {
-					await this.life.selectService(serviceCode);
-				} catch (err) {
-					toast(`${this.life.title}では、${this.life.services[serviceCode]} を選択できません`, 'warning');
-				}
-			});
-
-
+			const isServiceAvailable = available_codes.includes(serviceCode);
+			radio.closest('label').disabled = !isServiceAvailable;
+			if (isServiceAvailable)
+				// ラジオボタンにイベントリスナーをセット
+				radio.addEventListener('change', this._onServiceRadioSelect);
 		});
 
-		//テキストフィールドのinputイベント
-		caption.querySelector('input[name="username"]').addEventListener('input', e => {
-			//利用者表を入力した氏名でフィルター
-			this.filter('利用者氏名', new RegExp(`^${e.target.value}`));
-		});
+		//ユーザー名の入力欄にイベントリスナーをセット
+		caption.querySelector('input[name="username"]').addEventListener('input', this._onInputUserName);
 
-		//メニューに戻るボタンにイベントリスナをセット
-		caption.querySelector('button.goto-mentu').addEventListener('click', e => {
-			try {
-				this.life.gotoMenu();
-			} catch (err) {
-				toast('メニューページのロードに失敗しました。LIFEの戻るボタンを探してください（下の方に隠れていることがあります）。', 'error');
-			}
-		});
+		//メニューに戻るボタンにイベントリスナーをセット
+		caption.querySelector('button.goto-menu').addEventListener('click', this._onClickGotoMenuButton);
 	}
-
 	/**
-	 * 
+	 * ユーザーテーブルの本体の表示および属性を初期化（フィルター解除 + 行選択解除など）
+	 */
+	refreshBody() {
+		const table = this._table;
+		//フィルター解除
+		table.tHead.querySelectorAll('td').forEach(td => {
+			const title = td.textContent.trim();
+			this.filter(title, "");
+		});
+		// 行選択解除
+		const tr = table.tBodies[0].rows[0];
+		tr.selectExclusively(false);
+	}
+	/**
+	 * Lifeのiframe.srcが書き換えられた時のイベントリスナー
+	 * @param {Event} e - targetはLifeFeedBackPageインスタンス
+	 */
+	_onSrcLoaded = (e) => {
+		this.replaceCaption();
+		this.refreshBody();
+	};
+	/**
+	 * メニューに戻るボタンがクリックされたときのイベントリスナー
+	 * @param {Event} e - targetはbutton.goto-menu
+	 */
+	_onClickGotoMenuButton = (e) => {
+		try {
+			this.life.gotoMenu();
+		} catch (err) {
+			if (err instanceof LifeError) {
+				toast('メニューページのロードに失敗しました。LIFEの戻るボタンを探してください（下の方に隠れていることがあります）。', 'error');
+			} else {
+				throw err;
+			}
+		}
+	};
+	/**
+	 * ユーザー名入力欄に入力されたときのイベントリスナー
+	 * @param {Event} e - targetはinput[name="username"]
+	 */
+	_onInputUserName = (e) => {
+		//利用者表を氏名でフィルター
+		this.filter('利用者氏名', new RegExp(`^${e.target.value}`));
+	};
+	/**
+	 * サービス種類のラジオボタンが選択されたときのイベントリスナー
 	 * @param {Event} e - input[type="radio"] が選択された際のイベント
 	 */
 	_onServiceRadioSelect = async (e) => {
@@ -263,7 +316,7 @@ class LifeUserTable {
 		if (!serviceCode)
 			return;
 		//利用者表をサービス種類でフィルター
-		this._table.filter('利用者ID', new RegExp(serviceCode + '$'));
+		this.filter('利用者ID', new RegExp(serviceCode + '$'));
 
 		//サービス種類のセレクトボックスを選択しておく
 		try {
@@ -276,49 +329,52 @@ class LifeUserTable {
 	/**
 	 * テーブルのユーザー行がクリックされたときのイベントリスナー
 	 * @param {Event} e - Table Rowがクリックされた際のイベント
-	 * @returns 
 	 */
 	_onUserRowSelect = async (e) => {
 		const tr = e.currentTarget;
-		const userid = new LifeUserId(tr.dataset.id); //tr.querySelector('td:first-child').innerText;
-		const username = tr.dataset.name; // tr.querySelector('td:last-child').innerText;
+		const life = this.life;
+		const userid = new LifeUserId(tr.dataset.id);
+		const username = tr.dataset.name;
 		const serviceCode = userid.serviceCode;
 
 		//サービス種類を選択
-		try {
-			const serviceSelected = await this.life.selectService(serviceCode);
-			if (!serviceSelected) {
-				console.warn("ユーザー行のクリックでサービスが選択肢にありませんでした");
-			}
-		} catch (err) {
-			console.error("ユーザー行のクリックでサービス選択中にエラーが生じました", err);
+		const currentService = life.currentService;
+		if (currentService === null) {
+			toast('利用者を選択する前に、利用者テーブルをサービス種類で絞り込んでください。', 'warning');
+			return;
+		} else if (currentService !== serviceCode) {
+			toast('現在選択されているサービスと、利用者のサービスが一致しません。', 'error');
 			return;
 		}
-
 		try {
 			// life.selectUserが成功したら行を選択状態にする
-			const userSelected = await this.life.selectUser(userid);
+			const userSelected = await life.selectUser(userid);
 			if (userSelected) {
-				tr.selectExclusively(); // 自分だけ選択状態にする
-				toast(`${username}様の選択が完了しました`);
+				tr.selectExclusively(true); // 自分だけ選択状態にする
+				toast(`${username}様の選択が完了しました`, 'success');
 			} else {
 				// ユーザーが見つからなかった
-				tr.unselectAllSiblings(); // 自分含めすべての行を非選択状態にする
-				toast(`${username}様のデータは見つかりませんでした`, 'warning');
+				tr.selectExclusively(false); // 自分含めすべての行を非選択状態にする
+				toast(`${username}様のデータは見つかりませんでした`);
 			}
 
 		} catch (err) {
 			console.error("ユーザー行のクリックでサービスは選択されましたが、ドロップダウンの選択に失敗しました", err);
 			toast(`${userid}の選択に失敗しました`, 'warning');
 		}
-	}
+	};
 
 }
 
+
+
+export default LifeUserTable;
+
+/* @if ENV=development */
 if (!window.toast) {
 	window.toast = (message) => {
 		alert(message);
 	}
 }
-
 window.LifeUserTable = LifeUserTable;
+/* @endif */
