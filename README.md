@@ -5,12 +5,21 @@
 ## 機能
 
 - 利用者一覧のフィルター（実装済み）
-- 利用者IDのコピー（未実装）
+- サービス種類の選択（実装済み）
+- フィードバックメニューに戻るボタンの提供（実装済み）
 
 ## インストール方法
 
+- Tampermonkeyスクリプトとして使う
 - ブックマークレットとして使う
+- コードスニペットとして使う
 - Power Automate for Desktopのカスタムスクリプトとして使う
+
+### Tampermonkeyスクリプトとして使う
+
+1. Chrome拡張、Tampermonkeyをインストールします
+2. ./dist/main.js の内容をコピーしてTampermonkeyスクリプトに登録します
+3. LIFEフィードバックページを開きます
 
 ### ブックマークレットとして使う
 
@@ -18,10 +27,9 @@
 
 ### コードスニペットとして使う
 
-1. LIFEのフィードバックページを開いたら、Ctrl + Shift + I でDevToolsを起動します
-2. ソースタブでスニペットを追加します（名前は「life.js」とでもしておきましょう）
-3. scriptlet.txtの中身のコードをコピーして、貼り付けます。Ctrl + Sでスニペットを保存しましょう
-4. Ctrl + Enterまたは、スニペット名を右クリックして「実行」
+1. LIFEフィードバック参照ページにてDevtoolsを開きます
+2. LifeUserTable.js, LifeFeedBackPage.js, ToastDiv.js, main.jsをそれぞれ……ソースタブでスニペットに追加します
+3. それぞれを実行します（main.jsは最後に）
 
 ### Power Automate for Desktopのカスタムスクリプトとして使う
 
