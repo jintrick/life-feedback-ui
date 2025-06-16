@@ -20,7 +20,7 @@ class LifeUserTable {
 		this.life = lifeFeedback;
 
 		// LifeFeedBackPageがiframeのsrcの変更を検知したときイベントを発行するので、そいつを捉えてViewを更新する
-		this.life.addEventListener('src-loaded', e => this.replaceCaption());
+		this.life.addEventListener('src-loaded', this._onSrcLoaded);
 
 		// 各ユーザー行 > イベントリスナーを登録
 		// 各ユーザー行 > data-id, data-name, data-servicecode　属性を付与
@@ -265,9 +265,9 @@ class LifeUserTable {
 	refreshBody() {
 		const table = this._table;
 		//フィルター解除
-		table.tHead.querySelectorAll('td').forEach(td => {
+		table.tHead.querySelectorAll('th').forEach(td => {
 			const title = td.textContent.trim();
-			this.filter(title, "");
+			this.filter(title, /.*/);
 		});
 		// 行選択解除
 		const tr = table.tBodies[0].rows[0];
