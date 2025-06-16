@@ -284,7 +284,6 @@ class LifeFeedBackPage extends EventTarget {
 			try {
 				currentUrl = iframe.contentWindow.location.href;
 			} catch (err) {
-				debugger;
 				clearInterval(id);
 				return;
 			}
@@ -472,7 +471,7 @@ class LifeError extends Error {
 }
 
 
-export { LifeFeedBackPage, LifeUserId, LifeError };
+//@@export { LifeFeedBackPage, LifeUserId, LifeError };
 
 /* @if ENV=development */
 window.LifeFeedBackPage = LifeFeedBackPage;

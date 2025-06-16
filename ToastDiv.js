@@ -4,9 +4,11 @@
  * @param {'error'|'warning'|'success'} type - それぞれエラー、警告、成功を示唆する表示上のフレーバーを提供する
  * @param {number} duration - 消えるまでの時間（ミリ秒）
  */
-window.toast = (message, type = 'default', duration = 1500) => {
+function toast(message, type = 'default', duration = 1500) {
     getToastDiv().addToast(message, type, duration);
 };
+
+const DURATION_DEFAULT = 2000;
 
 /**
  * 初期化され、DOMに接続されたToastDivインスタンスを確実に得る
@@ -38,13 +40,13 @@ class ToastDiv extends HTMLElement {
         style.textContent = `
                     :host {
                         position: fixed;
-                        top: 50%;
-                        left: 50%;
+                        top: 40%;
+                        left: 40%;
                         transform: translate(-50%, -50%);
                         z-index: 10000;
                         pointer-events: none;
                     }
-                    
+        
                     .toast {
                         background: rgba(0, 0, 0, 0.9);
                         color: white;
@@ -88,8 +90,8 @@ class ToastDiv extends HTMLElement {
                     }
                     
                     .toast-message {
-                        font-size: 14px;
-                        line-height: 1.4;
+                        font-size: 18px;
+                        line-height: 1.2;
                         margin: 0;
                     }
                 `;
@@ -109,9 +111,9 @@ class ToastDiv extends HTMLElement {
      * 
      * @param {string} message 
      * @param {'error'|'success'|'warning'|'default'} [type='default'] - メッセージの種類
-     * @param {number} [duration=1500] - 表示時間（ミリ秒）
+     * @param {number} [duration=DURATION_DEFAULT] - 表示時間（ミリ秒）
      */
-    addToast(message, type = 'default', duration = 1500) {
+    addToast(message, type = 'default', duration = DURATION_DEFAULT) {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
 
@@ -141,3 +143,9 @@ class ToastDiv extends HTMLElement {
 
 customElements.define('toast-div', ToastDiv);
 
+//@@export default toast;
+
+
+/* @if ENV=development */
+window.toast = toast;
+/* @endif */

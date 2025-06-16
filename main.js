@@ -1,5 +1,5 @@
-import { LifeFeedBackPage } from './LifeFeedBackPage.js'
-import LifeUserTable from './LifeUserTable.js'
+//@@import { LifeFeedBackPage } from './LifeFeedBackPage.js'
+//@@import LifeUserTable from './LifeUserTable.js'
 
 (() => {
 
@@ -49,15 +49,40 @@ import LifeUserTable from './LifeUserTable.js'
         document.documentElement.appendChild(style);
     }
 
+    function waitForRequiredElement(callback) {
+
+        // ロードを待つ必要のある要素のセレクター
+        const targetSelector = 'table[role="table"]'
+
+        // すでにロードされていればコールバックを実行して抜ける
+        const element = document.querySelector(targetSelector);
+        if (element) {
+            callback();
+            return;
+        }
+        // MutationObserver定義
+        const observer = new MutationObserver(() => {
+            const element = document.querySelector(targetSelector);
+            if (element) {
+                observer.disconnect();
+                callback();
+            }
+        });
+        // 監視を開始
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    }
+
     function main() {
+        insertAdjacentCSS(CSS_SNIPPET);
+
         const life = new LifeFeedBackPage();
         const userTable = new LifeUserTable(life);
         userTable.replaceCaption();
 
         const feedbackRoot = document.querySelector('tableau-viz').shadowRoot;
-        //フィードバック操作オブジェクトを初期化
-        insertAdjacentCSS(CSS_SNIPPET);
-        // enhanceIframe(feedbackRoot);
 
         //consoleデバッグ用
         window.life = life;
@@ -65,7 +90,6 @@ import LifeUserTable from './LifeUserTable.js'
 
     }
 
-    main();
-
+    waitForRequiredElement(callBack);
 
 })();

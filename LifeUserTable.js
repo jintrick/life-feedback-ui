@@ -1,5 +1,5 @@
-import { LifeFeedBackPage, LifeUserId, LifeError } from './LifeFeedBackPage.js';
-import toast from './ToastDiv.js';
+//@@import { LifeFeedBackPage, LifeUserId, LifeError } from './LifeFeedBackPage.js';
+//@@import toast from './ToastDiv.js';
 
 /**
  * FHD未満の環境では右側に隠れてしまっている利用者テーブルを左側に寄せて
@@ -368,7 +368,7 @@ class LifeUserTable {
 
 
 
-export default LifeUserTable;
+//@@export default LifeUserTable;
 
 /* @if ENV=development */
 if (!window.toast) {
