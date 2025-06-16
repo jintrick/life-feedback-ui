@@ -911,6 +911,31 @@
             style.textContent = snippet;
             document.documentElement.appendChild(style);
         }
+        function waitForRequiredElement(callback) {
+
+            // ロードを待つ必要のある要素のセレクター
+            const targetSelector = 'table[role="table"]'
+
+            // すでにロードされていればコールバックを実行して抜ける
+            const element = document.querySelector(targetSelector);
+            if (element) {
+                callback();
+                return;
+            }
+            // MutationObserver定義
+            const observer = new MutationObserver(() => {
+                const element = document.querySelector(targetSelector);
+                if (element) {
+                    observer.disconnect();
+                    callback();
+                }
+            });
+            // 監視を開始
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        }
         function main() {
             const life = new (0, $457097b8657e7022$export$4a03f2d02d318682)();
             const userTable = new (0, $3a8ec0e263d79bdf$export$2e2bcd8739ae039)(life);
@@ -923,7 +948,7 @@
             window.life = life;
             window.userTable = userTable;
         }
-        window.addEventListener('load', main);
+        waitForRequiredElement(main);
     })();
 
 })();
