@@ -1,5 +1,5 @@
-//@@import { LifeFeedBackPage } from './LifeFeedBackPage.js'
-//@@import LifeUserTable from './LifeUserTable.js'
+import { LifeFeedBackPage } from './LifeFeedBackPage.js'
+import LifeUserTable from './LifeUserTable.js'
 
 (() => {
 
@@ -43,6 +43,12 @@
 
       `
 
+    let elementObserver = null;
+    const targetSelector = 'table[role="table"]' // ロードを待つ必要のある要素のセレクター
+
+    let spaObserver = null;
+    const targetPathName = '/feedback-check'; // ビルドを実行するパス
+
     function insertAdjacentCSS(snippet) {
         const style = document.createElement('style');
         style.textContent = snippet;
@@ -50,46 +56,75 @@
     }
 
     function waitForRequiredElement(callback) {
-
-        // ロードを待つ必要のある要素のセレクター
-        const targetSelector = 'table[role="table"]'
-
         // すでにロードされていればコールバックを実行して抜ける
         const element = document.querySelector(targetSelector);
         if (element) {
             callback();
             return;
         }
+        // 既存のobserverがあれば切断
+        if (elementObserver) {
+            elementObserver.disconnect();
+        }
         // MutationObserver定義
-        const observer = new MutationObserver(() => {
+        elementObserver = new MutationObserver(() => {
             const element = document.querySelector(targetSelector);
             if (element) {
-                observer.disconnect();
                 callback();
+                // ビルドが終わったら不要なobserverを切断
+                elementObserver.disconnect();
+                elementObserver = null;
             }
         });
         // 監視を開始
-        observer.observe(document.body, {
+        elementObserver.observe(document.body, {
             childList: true,
             subtree: true
         });
     }
 
-    function main() {
+    function build() {
+
         insertAdjacentCSS(CSS_SNIPPET);
 
         const life = new LifeFeedBackPage();
         const userTable = new LifeUserTable(life);
         userTable.replaceCaption();
 
-        const feedbackRoot = document.querySelector('tableau-viz').shadowRoot;
-
-        //consoleデバッグ用
+        // デバッグ用
         window.life = life;
         window.userTable = userTable;
 
     }
 
-    waitForRequiredElement(callBack);
+    function waitForPageTransition(callback) {
+        // 実行時すでにURLが https://life-web.mhlw.go.jp/feedback-check ならビルドを実行して抜ける
+        if (location.pathname === targetPathName) {
+            callback(build);
+            return;
+        }
+
+        // SPA遷移を監視
+        spaObserver = new MutationObserver(() => {
+            if (location.pathname === targetPathName) {
+                callback(build);
+                // ビルドが終わったら不要なobserverを切断
+                spaObserver.disconnect();
+                spaObserver = null;
+            }
+        });
+
+        spaObserver.observe(document, {
+            childList: true,
+            subtree: true
+        });
+    }
+
+    function main() {
+        // 初期ページロード時の処理
+        waitForPageTransition(() => waitForRequiredElement(build));
+    }
+
+    main();
 
 })();
